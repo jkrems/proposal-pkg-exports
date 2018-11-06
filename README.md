@@ -19,8 +19,8 @@
 
 ### `package.json` Interface
 
-We propose a field in `package.json` to specify an ESM location when importing bare specifiers.
-The key is TBD, the examples use "esm-import-map" as a placeholder.
+We propose a field in `package.json` to specify an ESM entrypoint location when importing bare specifiers.
+The key is TBD, the examples use "esm-exports" as a placeholder.
 Neither the name nor the fact that it exists top-level is final.
 
 The `package.json` interface will only be respected for bare specifiers.
@@ -38,7 +38,7 @@ The `import:` URL scheme is also explicitly disallowed in the mapping.
 ```js
 {
   "name": "@user/name",
-  "esm-import-map": "./dist/index.mjs"
+  "esm-exports": "./dist/index.mjs"
 }
 ```
 
@@ -51,7 +51,7 @@ The semantics of the mapped value are the same as for the single mapping.
 ```js
 {
   "name": "@user/name",
-  "esm-import-map": {
+  "esm-exports": {
     "default": "./dist/index.mjs",
     "foo": "./some/filename-here.mjs"
   }
@@ -84,49 +84,6 @@ import x from 'file:///path/to/pkg/dist/';
 // Fails - no such mapping.
 import x from '@user/name/dist/index.mjs';
 ```
-
-### Extension #1: Format Hint for `.js`
-
-For packages that support both ESM and CJS,
-the import map can be preferred on `import` while `require` would hit the existing main entrypoint.
-The fact that we have a strong signal for the preference of the module author,
-we can use the same signal to interpret a `.js` file as ESM if it is used in the import mapping.
-
-So the following would work:
-
-```
-{
-  // dist/index.js never hits the ESM content type logic and is interpreted as CJS by require.extensions:
-  "main": "dist/index.js",
-  // src/index.js is mapped to the ESM content type because it is loaded via the import map:
-  "esm-import-map": "src/index.js"
-}
-```
-
-This raises the question how something might appear in an import map but be CJS, e.g. because a library hasn't fully migrated.
-Also how subsequent imports from `src/index.js` would be interpreted.
-
-### Extension #2: Content Type Override for CJS
-
-One possible way of making a purely `.js`-based package easier to write,
-is to flip defaults.
-The content type lookup used when importing a `.js` file from disk would treat it as a module.
-A custom lookup can be used to allow importing `.js` files and interpret them as CJS.
-
-Example (strawman):
-
-```js
-// In package.json or via a node command line flag:
-{
-  "esm-content-types": {
-    // node --esm-content-type=./old-src/**/*.js:application/vnd.node.js
-    "./old-src/**/*.js": "application/vnd.node.js"
-  }
-}
-```
-
-No matter how a file is loaded, these overrides will be applied when loading the resource from a URL matching this filter.
-Code that does not want through this mapping can use `createRequireFunction`.
 
 ## Open Questions
 
