@@ -23,9 +23,11 @@ We propose a field in `package.json` to specify an ESM location when importing b
 The key is TBD, the examples use "esm-import-map" as a placeholder.
 Neither the name nor the fact that it exists top-level is final.
 
-The `package.json` interface will only be respected for bare specifiers.
-The existence of a `package.json` file is ignored otherwise.
-This implies that importing a directory using relative paths is not possible.
+The `package.json` "esm-import-map" interface will only be respected for bare specifiers.
+
+When using this property as a signifier of the package being an ESM package,
+this `package.json` check would also be done in package boundary lookups to determine
+if the package is ESM or legacy.
 
 #### Single Mapping
 
