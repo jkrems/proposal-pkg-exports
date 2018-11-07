@@ -1,5 +1,7 @@
 # Bare Module Specifier Resolution in node.js
 
+**Contributors:** Guy Bedford, Geoffrey Booth, Jan Krems, Saleh Abdel Motaal
+
 ## Motivating Examples
 
 * A package (`react-dom`) has a dedicated entrypoint `react-dom/server` for code that isn't compatible with a browser environment.
