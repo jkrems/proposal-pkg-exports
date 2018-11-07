@@ -95,7 +95,7 @@ import utc from '@momentjs/moment/timezones/utc';
 
 The following don’t work:
 
-```json
+```js
 import request from 'request/';
 // Error: trailing slash not mapped
 
