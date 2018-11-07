@@ -94,7 +94,7 @@ import utc from '@momentjs/moment/timezones/utc';
 // Loads file:///app/node_modules/@momentjs/moment/timezones/utc/index.mjs
 ```
 
-The following don’t work:
+The following don’t work - please note that **error messages and codes are TBD**:
 
 ```js
 import request from 'request/';
