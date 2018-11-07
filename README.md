@@ -75,8 +75,16 @@ Keys that end in slashes can map to folder roots, following the [pattern in the 
 
 The value of an export, e.g. `"./src/moment.mjs"`, must begin with `.` to signify a relative path (e.g. "./src" is okay, but `"/src"` or `"src"` are not). This is to reserve potential future use for `"exports"` to export things referenced via specifiers that aren’t relatively-resolved files, such as other packages or other protocols.
 
-There is the potential for collisions in the exports, such as `"/timezones/"` and `"/timezones/utc"` in the example above (e.g. if there’s a file named `utc` in the `./data/timezones` folder). A resolution algorithm will start with the longest potential match and try each until it finds a file to serve, or error if there are no possibilities. The algorithm should follow that used in the [import maps proposal](https://github.com/domenic/import-maps).
+There is the potential for collisions in the exports, such as `"/timezones/"` and `"/timezones/utc"` in the example above (e.g. if there’s a file named `utc` in the `./data/timezones` folder).
+Rough outline of a possible resolution algorithm:
 
+1. Find the package matching the base specifier, e.g. `@momentjs/moment` or `request`.
+1. Load its exports map.
+1. If there is an exact match for the requested specifier, return the resolution.
+1. Otherwise, find the longest matching path prefix. If there is a path prefix, return the resolution by applying the prefix.
+1. Return an error - no mapping found.
+
+In the future, the algorithm might be adjusted to align with work done in the [import maps proposal](https://github.com/domenic/import-maps).
 
 ### Usage
 
