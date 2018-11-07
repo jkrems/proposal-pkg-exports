@@ -120,3 +120,4 @@ import utc from '@momentjs/moment/timezones/utc/'; // Note trailing slash
 
 * [`package.json#browser`](https://github.com/defunctzombie/package-browser-field-spec)
 * [Import Maps](https://github.com/domenic/import-maps)
+* [`package.json#mimes`](https://github.com/nodejs/modules/pull/160)
