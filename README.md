@@ -115,3 +115,8 @@ import request from 'file:///app/node_modules/request/';
 import utc from '@momentjs/moment/timezones/utc/'; // Note trailing slash
 // Error: folders cannot be imported (there is no index.* magic)
 ```
+
+### Prior Art
+
+* [`package.json#browser`](https://github.com/defunctzombie/package-browser-field-spec)
+* [Import Maps](https://github.com/domenic/import-maps)
