@@ -9,6 +9,7 @@
 * A package is exclusively exposing a CJS interface.
 * A package is exposing both an ESM and a CJS interface.
 * A project wants to mix both ESM and CJS code, with CJS running as part of the ESM module graph.
+* A package wants to expose multiple entrypoints as its public API without leaking internal directory structure.
 
 ## High Level Considerations
 
@@ -17,6 +18,7 @@
   `"x"` is never resolved to `x.mjs` or `x/index.mjs` (or the `.js` equivalents).
 * The primary compatibility boundary are bare specifiers. Relative and absolute imports can follow simpler rules.
 * Resolution should not depend on file extensions, leaving open the potential for supporting ESM in `.js` files.
+* The directory structure of a module should be treated as private implementation detail.
 
 ## `package.json` Interface
 
