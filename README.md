@@ -1,4 +1,4 @@
-# Module Resolution & Format Lookup
+# Bare Module Specifier Resolution in node.js
 
 ## Motivating Examples
 
