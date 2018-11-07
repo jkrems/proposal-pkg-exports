@@ -21,14 +21,14 @@
 ## `package.json` Interface
 
 We propose a field in `package.json` to specify an ESM entrypoint location when importing bare specifiers.
-The key is TBD, the examples use `"esm-exports"` as a placeholder.
+The key is TBD, the examples use `"exports"` as a placeholder.
 Neither the name nor the fact that it exists top-level is final.
 
-The `package.json` `"esm-exports"` interface will only be respected for bare specifiers, e.g. `import _ from 'lodash'` where the specifier `'lodash'` doesn’t start with a `.` or `/`.
+The `package.json` `"exports"` interface will only be respected for bare specifiers, e.g. `import _ from 'lodash'` where the specifier `'lodash'` doesn’t start with a `.` or `/`.
 
-The existence of this `"esm-exports"` key in `package.json` signifies that the module should be imported as ESM by Node. The module may *also* have a CommonJS export, the `"main"` field, for consumers that use `require` such as older versions of Node.
+The existence of this `"exports"` key in `package.json` signifies that the module should be imported as ESM by Node. The module may *also* have a CommonJS export, the `"main"` field, for consumers that use `require` such as older versions of Node.
 
-Looking forward to future work around format disambiguation, such as the [`"mimes"` field proposal](https://github.com/nodejs/modules/pull/160), the check for `"esm-exports"` in `package.json` as a signifier of ESM mode would also be done in package boundary lookups to determine if the package is ESM or legacy.
+Looking forward to future work around format disambiguation, such as the [`"mimes"` field proposal](https://github.com/nodejs/modules/pull/160), the check for `"exports"` in `package.json` as a signifier of ESM mode would also be done in package boundary lookups to determine if the package is ESM or legacy.
 
 ### Example
 
@@ -39,7 +39,7 @@ Here’s a complete `package.json` example, for a hypothetical module named `@mo
   "name": "@momentjs/moment",
   "version": "0.0.0",
   "main": "./dist/index.js",
-  "esm-exports": {
+  "exports": {
     "": "./src/moment.mjs",
     "/": "./src/util/",
     "/timezones/": "./data/timezones/",
@@ -48,15 +48,15 @@ Here’s a complete `package.json` example, for a hypothetical module named `@mo
 }
 ```
 
-Within the `"esm-exports"` object, the keys are concatenated on the end of the name field, e.g. `import utc from '@momentjs/moment/timezones/utc'` is formed from `'@momentjs/moment'` + `'/timezones/utc'`.
+Within the `"exports"` object, the keys are concatenated on the end of the name field, e.g. `import utc from '@momentjs/moment/timezones/utc'` is formed from `'@momentjs/moment'` + `'/timezones/utc'`.
 
-The main entrypoint is therefore the empty string, `"": "./src/moment.mjs"`. For modules that desire to export *only* a single entrypoint, e.g. `import request from 'request'`, the `"esm-exports"` key itself can be set to the entrypoint:
+The main entrypoint is therefore the empty string, `"": "./src/moment.mjs"`. For modules that desire to export *only* a single entrypoint, e.g. `import request from 'request'`, the `"exports"` key itself can be set to the entrypoint:
 
 ```js
 {
   "name": "request",
   "version": "0.0.0",
-  "esm-exports": "./request.mjs"
+  "exports": "./request.mjs"
 }
 ```
 
@@ -70,7 +70,7 @@ Keys that end in slashes can map to folder roots, following the [pattern in the 
 
 - Unlike in CommonJS, there is no automatic searching for `index.js` or `index.mjs`.
 
-The value of an export, e.g. `"./src/moment.mjs"`, must begin with `.` to signify a relative path (e.g. "./src" is okay, but `"/src"` or `"src"` are not). This is to reserve potential future use for `"esm-exports"` to export things referenced via specifiers that aren’t relatively-resolved files, such as other packages or other protocols.
+The value of an export, e.g. `"./src/moment.mjs"`, must begin with `.` to signify a relative path (e.g. "./src" is okay, but `"/src"` or `"src"` are not). This is to reserve potential future use for `"exports"` to export things referenced via specifiers that aren’t relatively-resolved files, such as other packages or other protocols.
 
 There is the potential for collisions in the exports, such as `"/timezones/"` and `"/timezones/utc"` in the example above (e.g. if there’s a file named `utc` in the `./data/timezones` folder). A resolution algorithm will start with the longest potential match and try each until it finds a file to serve, or error if there are no possibilities. The algorithm should follow that used in the [import maps proposal](https://github.com/domenic/import-maps).
 
