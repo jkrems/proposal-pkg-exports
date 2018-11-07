@@ -2,105 +2,115 @@
 
 ## Motivating Examples
 
-* A package (`react-dom`) has a dedicated entrypoint `react-dom/server for code that isn't compatible with a browser environment.
+* A package (`react-dom`) has a dedicated entrypoint `react-dom/server` for code that isn't compatible with a browser environment.
 * A package (`angular`) exposes multiple independent APIs, modeled via import paths like `angular/common/http`.
 * A package (`lodash`) allows to import individual functions, e.g. `lodash/map`.
 * A package is exclusively exposing an ESM interface.
 * A package is exclusively exposing a CJS interface.
 * A package is exposing both an ESM and a CJS interface.
-* A package wishes to publish `.js` files containing ESM code.
 * A project wants to mix both ESM and CJS code, with CJS running as part of the ESM module graph.
 
-### High Level Considerations
+## High Level Considerations
 
 * The baseline behavior of relative imports should match a browser's with a simple file server.
   This implies that `./x` will only ever import exactly the sibling file "x" without appending paths or extensions.
+  `"x"` is never resolved to `x.mjs` or `x/index.mjs` (or the `.js` equivalents).
 * The primary compatibility boundary are bare specifiers. Relative and absolute imports can follow simpler rules.
+* Resolution should not depend on file extensions, leaving open the potential for supporting ESM in `.js` files.
 
-### `package.json` Interface
+## `package.json` Interface
 
 We propose a field in `package.json` to specify an ESM entrypoint location when importing bare specifiers.
-The key is TBD, the examples use "esm-exports" as a placeholder.
+The key is TBD, the examples use `"esm-exports"` as a placeholder.
 Neither the name nor the fact that it exists top-level is final.
 
-The `package.json` "esm-import-map" interface will only be respected for bare specifiers.
+The `package.json` `"esm-exports"` interface will only be respected for bare specifiers, e.g. `import _ from 'lodash'` where the specifier `'lodash'` doesn’t start with a `.` or `/`.
 
-When using this property as a signifier of the package being an ESM package,
-this `package.json` check would also be done in package boundary lookups to determine
-if the package is ESM or legacy.
+The existence of this `"esm-exports"` key in `package.json` signifies that the module should be imported as ESM by Node. The module may *also* have a CommonJS export, the `"main"` field, for consumers that use `require` such as older versions of Node.
 
-#### Single Mapping
+Looking forward to future work around format disambiguation, such as the [`"mimes"` field proposal](https://github.com/nodejs/modules/pull/160), the check for `"esm-exports"` in `package.json` as a signifier of ESM mode would also be done in package boundary lookups to determine if the package is ESM or legacy.
 
-For packages that only want to support `import 'pkg-name'`, the key can be set to a specifier.
-The specifier will be resolved relative to the URL of `package.json`.
-It may only be an absolute URL or a relative path ("./[...]", "../[...]").
-Bare specifiers are not allowed as values for the mapping.
-The `import:` URL scheme is also explicitly disallowed in the mapping.
+### Example
+
+Here’s a complete `package.json` example, for a hypothetical module named `@momentjs/moment`:
 
 ```js
 {
-  "name": "@user/name",
-  "esm-exports": "./dist/index.mjs"
-}
-```
-
-#### Multiple Mappings
-
-"Deep imports" are explicit and expressed as an object.
-When importing the package name directly, the default key will be used.
-The semantics of the mapped value are the same as for the single mapping.
-
-```js
-{
-  "name": "@user/name",
+  "name": "@momentjs/moment",
+  "version": "0.0.0",
+  "main": "./dist/index.js",
   "esm-exports": {
-    "default": "./dist/index.mjs",
-    "foo": "./some/filename-here.mjs"
+    "": "./src/moment.mjs",
+    "/": "./src/util/",
+    "/timezones/": "./data/timezones/",
+    "/timezones/utc": "./data/timezones/utc/index.mjs"
   }
 }
 ```
 
-For a consumer, this will mean the following, assuming the `package.json` file is located at `file:///path/to/pkg/package.json` and `@user/name` is mapped to that package:
+Within the `"esm-exports"` object, the keys are concatenated on the end of the name field, e.g. `import utc from '@momentjs/moment/timezones/utc'` is formed from `'@momentjs/moment'` + `'/timezones/utc'`.
+
+The main entrypoint is therefore the empty string, `"": "./src/moment.mjs"`. For modules that desire to export *only* a single entrypoint, e.g. `import request from 'request'`, the `"esm-exports"` key itself can be set to the entrypoint:
 
 ```js
-// Loads file:///path/to/pkg/dist/index.mjs
-import x from '@user/name';
-// Does the same as:
-import x from 'file:///path/to/pkg/dist/index.mjs';
-
-// Loads file:///path/to/pkg/some/filename-here.mjs
-import x from '@user/name/foo';
-// Does the same as:
-import x from 'file:///path/to/pkg/some/filename-here.mjs';
-
-// Fails - no such mapping (trailing slash not allowed).
-import x from '@user/name/';
-
-// Fails - directories cannot be imported, package.json only considered for bare imports
-import x from 'file:///path/to/pkg';
-// Fails - directories cannot be imported, package.json only considered for bare imports
-import x from 'file:///path/to/pkg/';
-// Fails - directories cannot be imported (there is no index.* magic)
-import x from 'file:///path/to/pkg/dist/';
-
-// Fails - no such mapping.
-import x from '@user/name/dist/index.mjs';
+{
+  "name": "request",
+  "version": "0.0.0",
+  "esm-exports": "./request.mjs"
+}
 ```
 
-## Open Questions
+Keys that end in slashes can map to folder roots, following the [pattern in the import maps proposal](https://github.com/domenic/import-maps#packages-via-trailing-slashes): `"/timezones/": "./data/timezones/"` would allow `import pdt from "@momentjs/moment/timezones/pdt.mjs"` to import `./data/timezones/pdt.mjs`.
 
-### Should there be a way to allow deep imports?
+- Using `"/"` maps to the root, so `"/": "./src/util/"` would allow `import tick from "@momentjs/moment/tick.mjs"` to import `/src/util/tick.mjs`.
 
-Possible solutions include:
+- Mapping a key of `"/"` to a value of `"./"` exposes all files in the package, where `"/": "./"` would allow `import privateHelpers from "@momentjs/moment/private-helpers.mjs"` to import `./private-helpers.mjs`.
 
-* It's always allowed and tried if an explicit mapping isn't found.
-* It's configured via a special key in the import map (e.g. `"/": "./lib/"`).
-* It's configured via a dedicated flag (`"esm-allow-deep-import": true`).
+- When mapping to a folder root, both the left and right sides must end in slashes: `"./": "./dist/"`, not `".": "./dist"`.
 
-### Should explict `/default` be allowed?
+- Unlike in CommonJS, there is no automatic searching for `index.js` or `index.mjs`.
+
+The value of an export, e.g. `"./src/moment.mjs"`, must begin with `.` to signify a relative path (e.g. "./src" is okay, but `"/src"` or `"src"` are not). This is to reserve potential future use for `"esm-exports"` to export things referenced via specifiers that aren’t relatively-resolved files, such as other packages or other protocols.
+
+There is the potential for collisions in the exports, such as `"/timezones/"` and `"/timezones/utc"` in the example above (e.g. if there’s a file named `utc` in the `./data/timezones` folder). A resolution algorithm will start with the longest potential match and try each until it finds a file to serve, or error if there are no possibilities. The algorithm should follow that used in the [import maps proposal](https://github.com/domenic/import-maps).
+
+
+### Usage
+
+For a consumer, the above `@momentjs/moment` and `request` packages can be used as follows, assuming the user’s project is in `/app` with `/app/package.json` and `/app/node_modules`:
 
 ```js
-import x from 'some-pkg';
-// Does this work and do the same thing?
-import x from 'some-pkg/default';
+import request from 'request';
+// Loads file:///app/node_modules/request/request.mjs
+
+import request from './node_modules/request/request.mjs';
+// Loads file:///app/node_modules/request/request.mjs
+
+import request from 'file:///app/node_modules/request/request.mjs';
+// Loads file:///app/node_modules/request/request.mjs
+
+import utc from '@momentjs/moment/timezones/utc';
+// Loads file:///app/node_modules/@momentjs/moment/timezones/utc/index.mjs
+```
+
+The following don’t work:
+
+```json
+import request from 'request/';
+// Error: trailing slash not mapped
+
+import request from 'request/request.mjs';
+// Error: no such mapping
+
+import moment from '@momentjs/moment/';
+// Error: trailing slash not allowed (cannot import folders, only files)
+
+import request from 'file:///app/node_modules/request';
+// Error: folders cannot be imported, package.json only considered for bare imports
+
+import request from 'file:///app/node_modules/request/';
+// Error: folders cannot be imported, package.json only considered for bare imports
+
+import utc from '@momentjs/moment/timezones/utc/'; // Note trailing slash
+// Error: folders cannot be imported (there is no index.* magic)
 ```
