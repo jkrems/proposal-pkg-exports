@@ -21,8 +21,9 @@
 ## `package.json` Interface
 
 We propose a field in `package.json` to specify an ESM entrypoint location when importing bare specifiers.
-The key is TBD, the examples use `"exports"` as a placeholder.
-Neither the name nor the fact that it exists top-level is final.
+
+> **The key is TBD, the examples use `"exports"` as a placeholder.**
+> **Neither the name nor the fact that it exists top-level is final.**
 
 The `package.json` `"exports"` interface will only be respected for bare specifiers, e.g. `import _ from 'lodash'` where the specifier `'lodash'` doesn’t start with a `.` or `/`.
 
