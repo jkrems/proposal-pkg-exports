@@ -45,7 +45,7 @@ Here’s a complete `package.json` example, for a hypothetical module named `@mo
   "version": "0.0.0",
   "main": "./dist/index.js",
   "exports": {
-    "": "./src/moment.mjs",
+    "default": "./src/moment.mjs",
     "/": "./src/util/",
     "/timezones/": "./data/timezones/",
     "/timezones/utc": "./data/timezones/utc/index.mjs"
@@ -55,7 +55,7 @@ Here’s a complete `package.json` example, for a hypothetical module named `@mo
 
 Within the `"exports"` object, the keys are concatenated on the end of the name field, e.g. `import utc from '@momentjs/moment/timezones/utc'` is formed from `'@momentjs/moment'` + `'/timezones/utc'`.
 
-The main entrypoint is therefore the empty string, `"": "./src/moment.mjs"`. For modules that desire to export *only* a single entrypoint, e.g. `import request from 'request'`, the `"exports"` key itself can be set to the entrypoint:
+The main entrypoint is therefore the empty string, `"default": "./src/moment.mjs"`. For modules that desire to export *only* a single entrypoint, e.g. `import request from 'request'`, the `"exports"` key itself can be set to the entrypoint:
 
 ```js
 {
