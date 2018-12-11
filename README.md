@@ -45,17 +45,17 @@ Here’s a complete `package.json` example, for a hypothetical module named `@mo
   "version": "0.0.0",
   "main": "./dist/index.js",
   "exports": {
-    "": "./src/moment.mjs",
-    "/": "./src/util/",
-    "/timezones/": "./data/timezones/",
-    "/timezones/utc": "./data/timezones/utc/index.mjs"
+    ".": "./src/moment.mjs",
+    "./": "./src/util/",
+    "./timezones/": "./data/timezones/",
+    "./timezones/utc": "./data/timezones/utc/index.mjs"
   }
 }
 ```
 
-Within the `"exports"` object, the keys are concatenated on the end of the name field, e.g. `import utc from '@momentjs/moment/timezones/utc'` is formed from `'@momentjs/moment'` + `'/timezones/utc'`.
+Within the `"exports"` object, the key string after the `'.'` is concatenated on the end of the name field, e.g. `import utc from '@momentjs/moment/timezones/utc'` is formed from `'@momentjs/moment'` + `'/timezones/utc'`.
 
-The main entrypoint is therefore the empty string, `"": "./src/moment.mjs"`. For modules that desire to export *only* a single entrypoint, e.g. `import request from 'request'`, the `"exports"` key itself can be set to the entrypoint:
+The main entrypoint is therefore the dot string, `".": "./src/moment.mjs"`. For modules that desire to export *only* a single entrypoint, e.g. `import request from 'request'`, the `"exports"` key itself can be set to the entrypoint:
 
 ```js
 {
@@ -65,11 +65,11 @@ The main entrypoint is therefore the empty string, `"": "./src/moment.mjs"`. For
 }
 ```
 
-Keys that end in slashes can map to folder roots, following the [pattern in the import maps proposal](https://github.com/domenic/import-maps#packages-via-trailing-slashes): `"/timezones/": "./data/timezones/"` would allow `import pdt from "@momentjs/moment/timezones/pdt.mjs"` to import `./data/timezones/pdt.mjs`.
+Keys that end in slashes can map to folder roots, following the [pattern in the import maps proposal](https://github.com/domenic/import-maps#packages-via-trailing-slashes): `"./timezones/": "./data/timezones/"` would allow `import pdt from "@momentjs/moment/timezones/pdt.mjs"` to import `./data/timezones/pdt.mjs`.
 
-- Using `"/"` maps to the root, so `"/": "./src/util/"` would allow `import tick from "@momentjs/moment/tick.mjs"` to import `/src/util/tick.mjs`.
+- Using `"./"` maps the root, so `"./": "./src/util/"` would allow `import tick from "@momentjs/moment/tick.mjs"` to import `./src/util/tick.mjs`.
 
-- Mapping a key of `"/"` to a value of `"./"` exposes all files in the package, where `"/": "./"` would allow `import privateHelpers from "@momentjs/moment/private-helpers.mjs"` to import `./private-helpers.mjs`.
+- Mapping a key of `"./"` to a value of `"./"` exposes all files in the package, where `"./": "./"` would allow `import privateHelpers from "@momentjs/moment/private-helpers.mjs"` to import `./private-helpers.mjs`.
 
 - When mapping to a folder root, both the left and right sides must end in slashes: `"./": "./dist/"`, not `".": "./dist"`.
 
@@ -77,7 +77,7 @@ Keys that end in slashes can map to folder roots, following the [pattern in the 
 
 The value of an export, e.g. `"./src/moment.mjs"`, must begin with `.` to signify a relative path (e.g. "./src" is okay, but `"/src"` or `"src"` are not). This is to reserve potential future use for `"exports"` to export things referenced via specifiers that aren’t relatively-resolved files, such as other packages or other protocols.
 
-There is the potential for collisions in the exports, such as `"/timezones/"` and `"/timezones/utc"` in the example above (e.g. if there’s a file named `utc` in the `./data/timezones` folder).
+There is the potential for collisions in the exports, such as `"./timezones/"` and `"./timezones/utc"` in the example above (e.g. if there’s a file named `utc` in the `./data/timezones` folder).
 Rough outline of a possible resolution algorithm:
 
 1. Find the package matching the base specifier, e.g. `@momentjs/moment` or `request`.
