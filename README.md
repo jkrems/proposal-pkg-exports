@@ -128,6 +128,12 @@ import utc from '@momentjs/moment/timezones/utc/'; // Note trailing slash
 // Error: folders cannot be imported (there is no index.* magic)
 ```
 
+### `npm init`
+
+Currently one of the [questions asked by `npm init`](https://nodesource.com/blog/your-first-nodejs-package/) is `entry point: (index.js)`. Accepting the default for this question adds `"main": "index.js"` to the generated `package.json` file.
+
+We propose that this behavior be changed. The question and default may remain the same, but it should generate `"exports": "./index.js"` instead.
+
 ### Prior Art
 
 * [`package.json#browser`](https://github.com/defunctzombie/package-browser-field-spec)
