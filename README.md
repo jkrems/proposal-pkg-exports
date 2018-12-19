@@ -53,7 +53,7 @@ Here’s a complete `package.json` example, for a hypothetical module named `@mo
 }
 ```
 
-Within the `"exports"` object, the key string after the `'.'` is concatenated on the end of the name field, e.g. `import utc from '@momentjs/moment/timezones/utc'` is formed from `'@momentjs/moment'` + `'/timezones/utc'`.
+Within the `"exports"` object, the key string after the `'.'` is concatenated on the end of the name field, e.g. `import utc from '@momentjs/moment/timezones/utc'` is formed from `'@momentjs/moment'` + `'/timezones/utc'`. Note that this is string manipulation, not a file path: `"./timezones/utc"` is allowed, but just `"timezones/utc"` is not. The `.` is a placeholder representing the package name.
 
 The main entrypoint is therefore the dot string, `".": "./src/moment.mjs"`. For modules that desire to export *only* a single entrypoint, e.g. `import request from 'request'`, the `"exports"` key itself can be set to the entrypoint:
 
