@@ -19,21 +19,22 @@
   This implies that `./x` will only ever import exactly the sibling file "x" without appending paths or extensions.
   `"x"` is never resolved to `x.mjs` or `x/index.mjs` (or the `.js` equivalents).
 * The primary compatibility boundary are bare specifiers. Relative and absolute imports can follow simpler rules.
-* Resolution should not depend on file extensions, leaving open the potential for supporting ESM in `.js` files.
+* Resolution should not depend on file extensions, allowing ESM syntax in `.js` files.
 * The directory structure of a module should be treated as private implementation detail.
 
 ## `package.json` Interface
 
-We propose a field in `package.json` to specify an ESM entrypoint location when importing bare specifiers.
+We propose a field in `package.json` to specify one or more entrypoint locations when importing bare specifiers.
 
 > **The key is TBD, the examples use `"exports"` as a placeholder.**
 > **Neither the name nor the fact that it exists top-level is final.**
 
 The `package.json` `"exports"` interface will only be respected for bare specifiers, e.g. `import _ from 'lodash'` where the specifier `'lodash'` doesn’t start with a `.` or `/`.
 
-The existence of this `"exports"` key in `package.json` signifies that the module should be imported as ESM by Node. The module may *also* have a CommonJS export, the `"main"` field, for consumers that use `require` such as older versions of Node.
-
-Looking forward to future work around format disambiguation, such as the [`"mimes"` field proposal](https://github.com/nodejs/modules/pull/160), the check for `"exports"` in `package.json` as a signifier of ESM mode would also be done in package boundary lookups to determine if the package is ESM or legacy.
+`"exports"` works in concert with the `package.json` `"type": "module"` signifier that a package can be imported as ESM by Node.
+`"exports"` by itself does not signify that a package should be treated as ESM, but `"exports"` is currently ignored for packages `require`d as CommonJS.
+Extending this feature to CommonJS may occur in the future, but issues of backward compatibility would need to be addressed.
+At the moment `"exports"` is limited to ESM packages or dual ESM/CommonJS packages that are imported as ESM.
 
 ### Example
 
@@ -43,6 +44,7 @@ Here’s a complete `package.json` example, for a hypothetical module named `@mo
 {
   "name": "@momentjs/moment",
   "version": "0.0.0",
+  "type": "module",
   "main": "./dist/index.js",
   "exports": {
     ".": "./src/moment.mjs",
@@ -61,6 +63,7 @@ The main entrypoint is therefore the dot string, `".": "./src/moment.mjs"`. For 
 {
   "name": "request",
   "version": "0.0.0",
+  "type": "module",
   "exports": "./request.mjs"
 }
 ```
