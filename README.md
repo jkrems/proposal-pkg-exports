@@ -36,6 +36,10 @@ The `package.json` `"exports"` interface will only be respected for bare specifi
 Extending this feature to CommonJS may occur in the future, but issues of backward compatibility would need to be addressed.
 At the moment `"exports"` is limited to ESM packages or dual ESM/CommonJS packages that are imported as ESM.
 
+For `"type": "module"` packages with both `"main"` and `"exports"`, a main entrypoint defined by `"exports"` takes precedence over one defined by `"main"`.
+This allows a package to be importable as either ESM or CommonJS.
+If a `package.json` lacks `"exports"` but includes `"type": "module"`, `"main"` defines the package’s ESM entrypoint.
+
 ### Example
 
 Here’s a complete `package.json` example, for a hypothetical module named `@momentjs/moment`:
@@ -55,18 +59,7 @@ Here’s a complete `package.json` example, for a hypothetical module named `@mo
 }
 ```
 
-Within the `"exports"` object, the key string after the `'.'` is concatenated on the end of the name field, e.g. `import utc from '@momentjs/moment/timezones/utc'` is formed from `'@momentjs/moment'` + `'/timezones/utc'`. Note that this is string manipulation, not a file path: `"./timezones/utc"` is allowed, but just `"timezones/utc"` is not. The `.` is a placeholder representing the package name.
-
-The main entrypoint is therefore the dot string, `".": "./src/moment.mjs"`. For modules that desire to export *only* a single entrypoint, e.g. `import request from 'request'`, the `"exports"` key itself can be set to the entrypoint:
-
-```js
-{
-  "name": "request",
-  "version": "0.0.0",
-  "type": "module",
-  "exports": "./request.mjs"
-}
-```
+Within the `"exports"` object, the key string after the `'.'` is concatenated on the end of the name field, e.g. `import utc from '@momentjs/moment/timezones/utc'` is formed from `'@momentjs/moment'` + `'/timezones/utc'`. Note that this is string manipulation, not a file path: `"./timezones/utc"` is allowed, but just `"timezones/utc"` is not. The `.` is a placeholder representing the package name. The main entrypoint is therefore the dot string, `".": "./src/moment.mjs"`.
 
 Keys that end in slashes can map to folder roots, following the [pattern in the browser import maps proposal](https://github.com/WICG/import-maps#packages-via-trailing-slashes): `"./timezones/": "./data/timezones/"` would allow `import pdt from "@momentjs/moment/timezones/pdt.mjs"` to import `./data/timezones/pdt.mjs`.
 
