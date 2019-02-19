@@ -19,21 +19,26 @@
   This implies that `./x` will only ever import exactly the sibling file "x" without appending paths or extensions.
   `"x"` is never resolved to `x.mjs` or `x/index.mjs` (or the `.js` equivalents).
 * The primary compatibility boundary are bare specifiers. Relative and absolute imports can follow simpler rules.
-* Resolution should not depend on file extensions, leaving open the potential for supporting ESM in `.js` files.
+* Resolution should not depend on file extensions, allowing ESM syntax in `.js` files.
 * The directory structure of a module should be treated as private implementation detail.
 
 ## `package.json` Interface
 
-We propose a field in `package.json` to specify an ESM entrypoint location when importing bare specifiers.
+We propose a field in `package.json` to specify one or more entrypoint locations when importing bare specifiers.
 
 > **The key is TBD, the examples use `"exports"` as a placeholder.**
 > **Neither the name nor the fact that it exists top-level is final.**
 
 The `package.json` `"exports"` interface will only be respected for bare specifiers, e.g. `import _ from 'lodash'` where the specifier `'lodash'` doesn’t start with a `.` or `/`.
 
-The existence of this `"exports"` key in `package.json` signifies that the module should be imported as ESM by Node. The module may *also* have a CommonJS export, the `"main"` field, for consumers that use `require` such as older versions of Node.
+`"exports"` works in concert with the `package.json` `"type": "module"` signifier that a package can be imported as ESM by Node.
+`"exports"` by itself does not signify that a package should be treated as ESM, but `"exports"` is currently ignored for packages `require`d as CommonJS.
+Extending this feature to CommonJS may occur in the future, but issues of backward compatibility would need to be addressed.
+At the moment `"exports"` is limited to ESM packages or dual ESM/CommonJS packages that are imported as ESM.
 
-Looking forward to future work around format disambiguation, such as the [`"mimes"` field proposal](https://github.com/nodejs/modules/pull/160), the check for `"exports"` in `package.json` as a signifier of ESM mode would also be done in package boundary lookups to determine if the package is ESM or legacy.
+For `"type": "module"` packages with both `"main"` and `"exports"`, a main entrypoint defined by `"exports"` takes precedence over one defined by `"main"`.
+This allows a package to be importable as either ESM or CommonJS.
+If a `package.json` lacks `"exports"` but includes `"type": "module"`, `"main"` defines the package’s ESM entrypoint.
 
 ### Example
 
@@ -43,6 +48,7 @@ Here’s a complete `package.json` example, for a hypothetical module named `@mo
 {
   "name": "@momentjs/moment",
   "version": "0.0.0",
+  "type": "module",
   "main": "./dist/index.js",
   "exports": {
     ".": "./src/moment.mjs",
@@ -53,19 +59,9 @@ Here’s a complete `package.json` example, for a hypothetical module named `@mo
 }
 ```
 
-Within the `"exports"` object, the key string after the `'.'` is concatenated on the end of the name field, e.g. `import utc from '@momentjs/moment/timezones/utc'` is formed from `'@momentjs/moment'` + `'/timezones/utc'`. Note that this is string manipulation, not a file path: `"./timezones/utc"` is allowed, but just `"timezones/utc"` is not. The `.` is a placeholder representing the package name.
+Within the `"exports"` object, the key string after the `'.'` is concatenated on the end of the name field, e.g. `import utc from '@momentjs/moment/timezones/utc'` is formed from `'@momentjs/moment'` + `'/timezones/utc'`. Note that this is string manipulation, not a file path: `"./timezones/utc"` is allowed, but just `"timezones/utc"` is not. The `.` is a placeholder representing the package name. The main entrypoint is therefore the dot string, `".": "./src/moment.mjs"`.
 
-The main entrypoint is therefore the dot string, `".": "./src/moment.mjs"`. For modules that desire to export *only* a single entrypoint, e.g. `import request from 'request'`, the `"exports"` key itself can be set to the entrypoint:
-
-```js
-{
-  "name": "request",
-  "version": "0.0.0",
-  "exports": "./request.mjs"
-}
-```
-
-Keys that end in slashes can map to folder roots, following the [pattern in the import maps proposal](https://github.com/domenic/import-maps#packages-via-trailing-slashes): `"./timezones/": "./data/timezones/"` would allow `import pdt from "@momentjs/moment/timezones/pdt.mjs"` to import `./data/timezones/pdt.mjs`.
+Keys that end in slashes can map to folder roots, following the [pattern in the browser import maps proposal](https://github.com/WICG/import-maps#packages-via-trailing-slashes): `"./timezones/": "./data/timezones/"` would allow `import pdt from "@momentjs/moment/timezones/pdt.mjs"` to import `./data/timezones/pdt.mjs`.
 
 - Using `"./"` maps the root, so `"./": "./src/util/"` would allow `import tick from "@momentjs/moment/tick.mjs"` to import `./src/util/tick.mjs`.
 
@@ -73,7 +69,7 @@ Keys that end in slashes can map to folder roots, following the [pattern in the 
 
 - When mapping to a folder root, both the left and right sides must end in slashes: `"./": "./dist/"`, not `".": "./dist"`.
 
-- Unlike in CommonJS, there is no automatic searching for `index.js` or `index.mjs`.
+- Unlike in CommonJS, there is no automatic searching for `index.js` or `index.mjs` or for file extensions. This matches the [behavior of the import maps proposal](https://github.com/WICG/import-maps#packages-via-trailing-slashes).
 
 The value of an export, e.g. `"./src/moment.mjs"`, must begin with `.` to signify a relative path (e.g. "./src" is okay, but `"/src"` or `"src"` are not). This is to reserve potential future use for `"exports"` to export things referenced via specifiers that aren’t relatively-resolved files, such as other packages or other protocols.
 
