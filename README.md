@@ -54,12 +54,15 @@ Here’s a complete `package.json` example, for a hypothetical module named `@mo
     ".": "./src/moment.mjs",
     "./": "./src/util/",
     "./timezones/": "./data/timezones/",
-    "./timezones/utc": "./data/timezones/utc/index.mjs"
+    "./timezones/utc": "./data/timezones/utc/index.mjs",
+    "localdep": "./third-party/localdep.mjs"
   }
 }
 ```
 
 Within the `"exports"` object, the key string after the `'.'` is concatenated on the end of the name field, e.g. `import utc from '@momentjs/moment/timezones/utc'` is formed from `'@momentjs/moment'` + `'/timezones/utc'`. Note that this is string manipulation, not a file path: `"./timezones/utc"` is allowed, but just `"timezones/utc"` is not. The `.` is a placeholder representing the package name. The main entrypoint is therefore the dot string, `".": "./src/moment.mjs"`.
+
+For keys not beginning in `.`, these are mappings which apply internally to any imports made from within the package itself. So `src/moment.mjs` could contain for example `import dep from 'localdep'` which would load from a package-relative location. For example one could define `"moment": "./src/moment.mjs"` allowing the package to refer to itself by name as well in this way. These mappings cannot be used at all from outside of the package.
 
 Keys that end in slashes can map to folder roots, following the [pattern in the browser import maps proposal](https://github.com/WICG/import-maps#packages-via-trailing-slashes): `"./timezones/": "./data/timezones/"` would allow `import pdt from "@momentjs/moment/timezones/pdt.mjs"` to import `./data/timezones/pdt.mjs`.
 
