@@ -2,6 +2,38 @@
 
 **Contributors:** Guy Bedford, Geoffrey Booth, Jan Krems, Saleh Abdel Motaal
 
+## Outstanding Issues
+
+* How do we prevent a "same specifier, different instance" issue.
+  Can we prevent it?
+  Can we discourage it?
+  `import 'foo/cjs'` still allows getting two copies (it's less implicit though).
+
+* The specifier itself can only be mapped using the `main` field to prevent collision.
+* `exports` changes the meaning of `main`:
+  With `exports`, the absence of `main` means "no mapping of bare bare specifier",
+  without `exports`, `main` implicitly defaults to `index`.
+* What about `"main": "./index.js"` with `"type": "module"`.
+  Would that mean `require('x')` would load the same file as a script
+  (and supposedly fail unless it's a global side effect file)?
+  Would it fail because `require._extensions` is adjusted based on `type`?
+  Myles says he doesn't care about this case. It's mostly about the practical
+  impact, not about 100% theoretical correctness.
+
+* Can we still provide shorthands without expansive changes to the CJS loader?
+  If we want to support `@quinnjs/cli/runner`,
+  the CJS loader would be made to be `package.json` boundary aware because it
+  would need to check the package directory for a potential `exports` spec.
+  This would be a clear departure from how the resolution algorithm works today
+  (`package.json` and `node_modules` have no connection from the CJS perspective).
+
+* What needs to change in the CJS resolution algorithm?
+
+* `PACKAGE_EXPORT_RESOLVE(packageName, packageSubpath, parentURL)`
+  - Replaces `PACKAGE_MAIN_RESOLVE`
+  - If packageSubpath is `""`, it uses the `main` field.
+  - Otherwise, it uses the `exports` field (or appends if there is none)
+
 ## Motivating Examples
 
 * A package (`react-dom`) has a dedicated entrypoint `react-dom/server` for code that isn't compatible with a browser environment.
