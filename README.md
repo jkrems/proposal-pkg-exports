@@ -34,6 +34,79 @@
   - If packageSubpath is `""`, it uses the `main` field.
   - Otherwise, it uses the `exports` field (or appends if there is none)
 
+* Using `~/public-entry` may allow us to cleanly support both hoisted and internal
+  mappings. Alternatively, we could split this proposal into `imports` and `exports`.
+  The `~` syntax could also be used to express "import from myself"
+  as a shorthand for the package name.
+  It would only be valid for its own scope.
+  This should be treated as a future enhancement and maybe should also be opt-in
+  because it requires duplicating all import map entries.
+
+* Since it would apply to CJS as well, it would be less confusing to make lock-down
+  an independent feature that maybe should not be included in the first version.
+
+Scrap book:
+
+```js
+{
+  "name": "gofer",
+  "main": "lib/gofer.js",
+  // General intuition: This is what this package contributes to the import map.
+  // It currently includes both information of how it would expect to be used from the outside
+  // and how the import map for its internal files ("import map scope") would look like.
+  // A possible improvement would be to split these into two separate entries:
+  // `exports` (hoisted) and `imports` (internal).
+  "exports": {
+    // Base-level: ~ is the current package (gofer).
+    // These entries will be included in the scope of the user/referrer of this package.
+    "~/esm": "./lib/gofer.mjs",
+
+    // Entries that start with a "." refer to URLs relative to the package root.
+    // When importing the given URL from inside of this scope, it will be rewritten.
+    // This process is not recursive (see: import maps).
+    "./lib/fetch.js": "./lib/fetch.node.js",
+    // This isn't restricted to relative URLs. The same would also work for absolute URLs.
+    // Ignore the fallback syntax if it's confusing, this is modelled after:
+    // https://github.com/WICG/import-maps#for-built-in-modules-in-browsers-without-import-maps
+    "https://cdnjs.cloudflare.com/ajax/libs/fetch/3.0.0/fetch.min.js": [
+      "std:fetch",
+      "node:fetch",
+      "https://cdnjs.cloudflare.com/ajax/libs/fetch/3.0.0/fetch.min.js",
+    ],
+
+    // Since everything that doesn't start with `~` is just included in the import map scope,
+    // we can also include arbitrary entries. Somebody wants to remap `fs`? They *could*.
+    "fs": "https://unpkg.com/graceful-fs@4.1.15/graceful-fs.js",
+  },
+
+  // Now for the crazy bit: We *could*, in theory, replace #dependencies as well.
+  // Downside: One loader wouldn't be able to resolve the same semver range
+  // in different ways. Multiple copies still work.
+  "imports": {
+    "express": "https://unpkg.com/express@4.x",
+    // Potential sugar:
+    // Though it would be interesting how it would affect hoisting of import maps in express.
+    // E.g. would that be part of installing it / generating the lock file?
+    // Simplest case would be to have 1-2 entries and just use the slash expansion:
+    "express/": "https://unpkg.com/express@4.x/",
+    // But that isn't actually the same thing, it uses redirects instead of rewrites before fetching.
+
+    // One possible way out of this: Use a custom protocol that must be replaced before real use,
+    // e.g. when generating the import map.
+    // This means the package would (de-facto) not work with the default loader
+    // unless it has special support for this.
+    // The following may load meta data from the given URL, determine
+    // the exports, and generate multiple entries in the import map accordingly.
+    "fs": "js-bundle+https://legacy@registry.entropic.dev/figgy-pudding",
+    // While the above isn't usable in a browser as-is (yet?), the final composed
+    // import map would be compatible. It would unlikely to be anything but sugar
+    // for package managers and bundlers (and/or node).
+
+    // The easiest solution may be to keep using a separate field (or file) for dependency lists.
+  },
+}
+```
+
 ## Motivating Examples
 
 * A package (`react-dom`) has a dedicated entrypoint `react-dom/server` for code that isn't compatible with a browser environment.
