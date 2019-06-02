@@ -44,6 +44,8 @@
 
 * Since it would apply to CJS as well, it would be less confusing to make lock-down
   an independent feature that maybe should not be included in the first version.
+  The default value for `exports` would be `{ "./", "./" }`, effectively preserving
+  the current behavior of `require`.
 
 Scrap book:
 
