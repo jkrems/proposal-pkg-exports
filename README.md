@@ -92,6 +92,11 @@ Scrap book:
     // Simplest case would be to have 1-2 entries and just use the slash expansion:
     "express/": "https://unpkg.com/express@4.x/",
     // But that isn't actually the same thing, it uses redirects instead of rewrites before fetching.
+    // It *could* also mean that the file at https://unpkg.com/express@4.x/ contains something
+    // along the lines of:
+    //    export * from 'https://unpkg.com/express@4.x/';
+    // Although that wouldn't properly handle default exports..?
+    // https://github.com/guybedford/proposal-export-star-default never happened. :(
 
     // One possible way out of this: Use a custom protocol that must be replaced before real use,
     // e.g. when generating the import map.
