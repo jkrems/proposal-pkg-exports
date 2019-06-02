@@ -1,5 +1,46 @@
 # Bare Module Specifier Resolution in node.js
 
+# Maybe: Generate Import Maps From `package.json` Metadata
+
+```js
+{
+  "imports": {
+    "graceful-fs": "?", // package.json#main
+    "graceful-fs/no-side-effects": "?" // package.json#exports
+  },
+  "scopes": [
+    {
+      "prefix": "fs://project/node_modules/graceful-fs",
+      "imports": { /* ? */ }, // package.json#imports
+    },
+    {
+      "prefix": "fs://project/node_modules/gofer",
+      "imports": {
+        "./lib/request.js": [
+          "./lib/request.node.js",
+          // or: { node: true, value: "./lib/request.node.js" },
+          "./lib/request.browser.js",
+          // or: { browser: true, value: "./lib/request.node.js" },
+          "./lib/request.react-native.js",
+          "./lib/request.electron.js",
+        ],
+      },
+    },
+  ]
+}
+```
+
+```js
+{
+  "main": "./old-common.js",
+  "exports": {
+    "/": "/",
+    // vanity support for nicer import specifier
+    "/entry": "/entry.js"
+  }
+}
+```
+
 **Contributors:** Guy Bedford, Geoffrey Booth, Jan Krems, Saleh Abdel Motaal
 
 ## Outstanding Issues
@@ -8,6 +49,12 @@
   Can we prevent it?
   Can we discourage it?
   `import 'foo/cjs'` still allows getting two copies (it's less implicit though).
+
+* How would imports/exports merging work when things get hoisted.
+
+* Call out how "browser vs. node" implementation may look like.
+
+* Ecosystem pressure to allow complex resolution.
 
 * The specifier itself can only be mapped using the `main` field to prevent collision.
 * `exports` changes the meaning of `main`:
@@ -58,11 +105,12 @@ Scrap book:
   // and how the import map for its internal files ("import map scope") would look like.
   // A possible improvement would be to split these into two separate entries:
   // `exports` (hoisted) and `imports` (internal).
-  "exports": {
-    // Base-level: ~ is the current package (gofer).
+  "exports": { // default "exports": { "/": "/" },
     // These entries will be included in the scope of the user/referrer of this package.
-    "~/esm": "./lib/gofer.mjs",
-
+    "/esm": "./lib/gofer.mjs",
+    // "my-pkg/esm.mjs" containing "export * from './lib/gofer.mjs'" <- this is the alternative
+  },
+  "imports": {
     // Entries that start with a "." refer to URLs relative to the package root.
     // When importing the given URL from inside of this scope, it will be rewritten.
     // This process is not recursive (see: import maps).
@@ -74,6 +122,16 @@ Scrap book:
       "std:fetch",
       "node:fetch",
       "https://cdnjs.cloudflare.com/ajax/libs/fetch/3.0.0/fetch.min.js",
+    ],
+
+    "./lib/request.js": [
+      "./lib/request.node.js",
+      "./lib/request.browser.js",
+    ],
+    "./build/Release/native.node": [
+      "./build/Release/native.windows.node",
+      "./build/Release/native.osx.node",
+      "./build/Release/native.linux.node",
     ],
 
     // Since everything that doesn't start with `~` is just included in the import map scope,
@@ -104,7 +162,7 @@ Scrap book:
     // unless it has special support for this.
     // The following may load meta data from the given URL, determine
     // the exports, and generate multiple entries in the import map accordingly.
-    "fs": "js-bundle+https://legacy@registry.entropic.dev/figgy-pudding",
+    "figgy-pudding": "js-bundle+https://legacy@registry.entropic.dev/figgy-pudding",
     // While the above isn't usable in a browser as-is (yet?), the final composed
     // import map would be compatible. It would unlikely to be anything but sugar
     // for package managers and bundlers (and/or node).
