@@ -76,6 +76,9 @@
 
 * What needs to change in the CJS resolution algorithm?
 
+* What are the risks of future browser compat / spec compliance?
+  How can we reduce those risks?
+
 * `PACKAGE_EXPORT_RESOLVE(packageName, packageSubpath, parentURL)`
   - Replaces `PACKAGE_MAIN_RESOLVE`
   - If packageSubpath is `""`, it uses the `main` field.
