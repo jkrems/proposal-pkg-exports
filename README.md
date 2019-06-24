@@ -40,6 +40,8 @@ For `"type": "module"` packages with both `"main"` and `"exports"`, a main entry
 This allows a package to be importable as either ESM or CommonJS.
 If a `package.json` lacks `"exports"` but includes `"type": "module"`, `"main"` defines the package’s ESM entrypoint.
 
+For packages that only have a main and no exports, `"exports": false` can be used as a shorthand for `"exports": {}` providing an encapsulated package.
+
 ### Example
 
 Here’s a complete `package.json` example, for a hypothetical module named `@momentjs/moment`:
