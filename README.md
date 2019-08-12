@@ -12,6 +12,7 @@
 * A package is exposing both an ESM and a CJS interface.
 * A project wants to mix both ESM and CJS code, with CJS running as part of the ESM module graph.
 * A package wants to expose multiple entrypoints as its public API without leaking internal directory structure.
+* A package wants to reference an internally aliased subpath, without exposing it publicly.
 
 ## High Level Considerations
 
@@ -22,22 +23,19 @@
 * Resolution should not depend on file extensions, allowing ESM syntax in `.js` files.
 * The directory structure of a module should be treated as private implementation detail.
 
-## `package.json` Interface
+## `package.json` Interfaces
 
-We propose a field in `package.json` to specify one or more entrypoint locations when importing bare specifiers.
+We propose two fields in `package.json` to specify entrypoints and internal aliasing of bare specifiers - [`"exports"`](#1-exports-field) and [`"imports"`](#2-imports-field).
 
-> **The key is TBD, the examples use `"exports"` as a placeholder.**
-> **Neither the name nor the fact that it exists top-level is final.**
+> **For both fields the final names of `"exports"` and `"imports"` are still TBD, and these names should be considered placeholders.**
 
-The `package.json` `"exports"` interface will only be respected for bare specifiers, e.g. `import _ from 'lodash'` where the specifier `'lodash'` doesn’t start with a `.` or `/`.
+Both interfaces will only be respected for bare specifiers, e.g. `import _ from 'lodash'` where the specifier `'lodash'` doesn’t start with a `.` or `/`.
 
-`"exports"` works in concert with the `package.json` `"type": "module"` signifier that a package can be imported as ESM by Node - `"exports"` by itself does not signify that a package should be treated as ESM.
+Both features can be supported in both CommonJS and ES modules.
 
-This feature can be supported for both CommonJS and ES modules.
+### 1. Exports Field
 
-For packages that only have a main and no exports, `"exports": false` can be used as a shorthand for `"exports": {}` providing an encapsulated package.
-
-### Example
+#### Example
 
 Here’s a complete `package.json` example, for a hypothetical module named `@momentjs/moment`:
 
@@ -80,7 +78,9 @@ Rough outline of a possible resolution algorithm:
 
 In the future, the algorithm might be adjusted to align with work done in the [import maps proposal](https://github.com/domenic/import-maps).
 
-### Usage
+For packages that only have a main and no exports, `"exports": false` can be used as a shorthand for `"exports": {}` providing an encapsulated package.
+
+#### Usage
 
 For a consumer, the above `@momentjs/moment` and `request` packages can be used as follows, assuming the user’s project is in `/app` with `/app/package.json` and `/app/node_modules`:
 
@@ -118,6 +118,69 @@ import request from 'file:///app/node_modules/request/';
 
 import utc from '@momentjs/moment/timezones/utc/'; // Note trailing slash
 // Error: folders cannot be imported (there is no index.* magic)
+```
+
+### 2. Imports Field
+
+> **To avoid conflict with `node_modules` packages, the current proposal prefixes all imports with `#name`, so that the fact that an alias is being imported is clear. Whether this restriction is maintained in the final proposal, or what symbol is used is still TBD.**
+
+#### Example
+
+For the same example package as provided for `"exports"`, consider if we wanted to make the `timezones` implementation something that is only referenced internally by code within `@momentjs/moment`, instead of exposing it to external importers.
+
+```js
+{
+  "name": "@momentjs/moment",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "imports": {
+    "#timezones/": "./data/timezones/",
+    "#timezones/utc": "./data/timezones/utc/index.mjs",
+    "#external-feature": "external-pkg/feature",
+    "#moment/": "./"
+  }
+}
+```
+
+As with package exports, mappings are mapped relative to the package base, and keys that end in slashes can map to folder roots.
+
+The resolution algorithms remain the same except `"exports"` provide the added feature that they can also map into third-party packages that would be looked up in node_modules, including to subpaths that would be in turn resolved through `"exports"`. There is no risk of circular resolution here, since `"exports"` themselves only ever resolve to direct internal paths and can't in turn map to aliases.
+
+The `"imports"` that apply within a given file are determined based on looking up the package boundary of that file.
+
+#### Usage
+
+For the author of `@momentjs/moment`, they can use these aliases with the following code in any file in `@momentjs/moment/*.js`, provided it matches the package boundary of the `package.json` file:
+
+```js
+import utc from '#timezones/utc';
+// Loads file:///app/node_modules/@momentjs/moment/data/timezones/utc/index.mjs
+
+import utc from './data/timezones/utc/index.mjs';
+// Loads file:///app/node_modules/@momentjs/moment/data/timezones/utc/index.mjs
+
+import utc from '#timezones/utc/index.mjs';
+// Loads file:///app/node_modules/@momentjs/moment/data/timezones/utc/index.mjs
+
+import utc from '#moment/data/timezones/utc/index.mjs';
+// Loads file:///app/node_modules/@momentjs/moment/data/timezones/utc/index.mjs
+```
+
+The following don’t work - please note that **error messages and codes are TBD**:
+
+```js
+import utc from '#timezones/utc/';
+// Error: trailing slash not mapped
+
+import unknown from '#unknown';
+// Error: no such import alias
+
+import timezones from '#timezones/';
+// Error: trailing slash not allowed (cannot import folders, only files)
+
+import utc from '#moment';
+// Error: no mapping provided (folder mappings require subpaths)
 ```
 
 ### Prior Art
