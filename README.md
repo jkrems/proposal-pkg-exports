@@ -122,7 +122,11 @@ import utc from '@momentjs/moment/timezones/utc/'; // Note trailing slash
 
 ### 2. Imports Field
 
-> **To avoid conflict with `node_modules` packages, the current proposal prefixes all imports with `#name`, so that the fact that an alias is being imported is clear. Whether this restriction is maintained in the final proposal, or what symbol is used is still TBD.**
+Imports provide the ability to remap bare specifiers within packages before they hit the node_modules resolution process.
+
+The current proposal prefixes all imports with `#` to provide a clear signal that it's a _symbolic specifier_ and also to prevent packages that use imports from working in any environment (runtime, bundler) that isn't aware of imports.
+
+> **Whether this restriction is maintained in the final proposal, or what exact symbol is used for `#` is still TBD.**
 
 #### Example
 
