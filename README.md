@@ -145,7 +145,7 @@ For the same example package as provided for `"exports"`, consider if we wanted 
 
 As with package exports, mappings are mapped relative to the package base, and keys that end in slashes can map to folder roots.
 
-The resolution algorithms remain the same except `"exports"` provide the added feature that they can also map into third-party packages that would be looked up in node_modules, including to subpaths that would be in turn resolved through `"exports"`. There is no risk of circular resolution here, since `"exports"` themselves only ever resolve to direct internal paths and can't in turn map to aliases.
+The resolution algorithms remain the same except `"imports"` provide the added feature that they can also map into third-party packages that would be looked up in node_modules, including to subpaths that would be in turn resolved through `"exports"`. There is no risk of circular resolution here, since `"exports"` themselves only ever resolve to direct internal paths and can't in turn map to aliases.
 
 The `"imports"` that apply within a given file are determined based on looking up the package boundary of that file.
 
