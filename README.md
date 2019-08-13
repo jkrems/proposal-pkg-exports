@@ -94,7 +94,7 @@ The following validations are performed for an exports start to resolve:
 For directory resolutions the following validations also apply:
 
 - Directory exports targets must end in a trailing _"/"_.
-- Directory exports targets may not backtrack below the package base.
+- Directory exports targets may not backtrack above the package base.
 - Directory exports subpaths may not backtrack below the target folder.
 
 Whenever there is a validation failure, any exports match must throw a Module Not Found error, and any validation failure context can be included in the error message.
