@@ -13,6 +13,7 @@
 * A project wants to mix both ESM and CJS code, with CJS running as part of the ESM module graph.
 * A package wants to expose multiple entrypoints as its public API without leaking internal directory structure.
 * A package wants to reference an internally aliased subpath, without exposing it publicly.
+* A package wants to polyfill a builtin module and handle this through a package fallback mechanism like import maps.
 
 ## High Level Considerations
 
@@ -22,6 +23,7 @@
 * The primary compatibility boundary are bare specifiers. Relative and absolute imports can follow simpler rules.
 * Resolution should not depend on file extensions, allowing ESM syntax in `.js` files.
 * The directory structure of a module should be treated as private implementation detail.
+* Validations should apply similarly to import maps in supporting forwards-compatibility with possible future features.
 
 ## `package.json` Interfaces
 
@@ -48,7 +50,8 @@ Here’s a complete `package.json` example, for a hypothetical module named `@mo
   "exports": {
     "./": "./src/util/",
     "./timezones/": "./data/timezones/",
-    "./timezones/utc": "./data/timezones/utc/index.mjs"
+    "./timezones/utc": "./data/timezones/utc/index.mjs",
+    "./core-polyfill": ["std:core-module", "./core-polyfill"]
   }
 }
 ```
@@ -78,7 +81,23 @@ Rough outline of a possible resolution algorithm:
 
 In the future, the algorithm might be adjusted to align with work done in the [import maps proposal](https://github.com/domenic/import-maps).
 
-For packages that only have a main and no exports, `"exports": false` can be used as a shorthand for `"exports": {}` providing an encapsulated package.
+#### Validations and Fallbacks
+
+The following validations are performed for an exports start to resolve:
+
+- The exports target must be a string and start with _"./"_ (URLs and absolute paths are not currently supported but may be supported in future).
+- The exports target cannot backtrack below the package base.
+- Exports targets cannot map into a nested node_modules path.
+
+For directory resolutions the following validations also apply:
+
+- Directory exports targets must end in a trailing _"/"_.
+- Directory exports targets may not backtrack above the package base.
+- Directory exports subpaths may not backtrack above the target folder.
+
+Whenever there is a validation failure, any exports match must throw a Module Not Found error, and any validation failure context can be included in the error message.
+
+Fallback arrays allow validation failures to continue checking the next item in the fallback array providing forwards compatiblitiy for new features in future based on extending these validation rules to new cases.
 
 #### Usage
 
