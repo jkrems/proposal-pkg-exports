@@ -29,9 +29,9 @@ We propose two fields in `package.json` to specify entrypoints and internal alia
 
 > **For both fields the final names of `"exports"` and `"imports"` are still TBD, and these names should be considered placeholders.**
 
-Both interfaces will only be respected for bare specifiers, e.g. `import _ from 'lodash'` where the specifier `'lodash'` doesn’t start with a `.` or `/`.
+These interfaces will only be respected for bare specifiers, e.g. `import _ from 'lodash'` where the specifier `'lodash'` doesn’t start with a `.` or `/`.
 
-Both features can be supported in both CommonJS and ES modules.
+Package _exports_ and _imports_ can be supported fully independently, and in both CommonJS and ES modules.
 
 ### 1. Exports Field
 
