@@ -184,6 +184,8 @@ Condition names are matched in a priority order. In Node.js the following condit
 
 > Note: Using a "require" condition opens up the dual specifier hazard in Node.js where a package can have different instances between CJS and ESM importers. There is an argument that this condition is an opt-in behaviour to the hazard which is less risky than the main concerns of the hazard which were non-intentional cases. It is still not clear if this condition will get consensus, and it may still be removed.
 
+> Node: It could also be worthwhile considering object order over priority order. This would shift the source of truth of the entry priority from the resolver to the package author, which could be beneficial, but should be discussed further.
+
 If no condition is matched, the package fallback applies. If the matched condition target is invalid, the fallback will still not apply, although individual condition targets can themselves use array fallbacks.
 
 Other resolvers are free to define their own conditions to match. Eg it is expected that users will use a `"browser"` condition name for browser mappings.
