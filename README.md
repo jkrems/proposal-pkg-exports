@@ -51,7 +51,7 @@ Here’s a complete `package.json` example, for a hypothetical module named `@mo
     "./": "./src/util/",
     "./timezones/": "./data/timezones/",
     "./timezones/utc": "./data/timezones/utc/index.mjs",
-    "./core-polyfill": ["std:core-module", "./core-polyfill"]
+    "./core-polyfill": ["std:core-module", "./core-polyfill.js"]
   }
 }
 ```
@@ -162,7 +162,6 @@ will load `pkg/main.js` from both CommonJS and ESM importers `require('pkg')` or
 
 ```js
 {
-  "main": "./index.js",
   "default": false
 }
 ```
@@ -212,8 +211,8 @@ Taking the previous moment example we can provide browser / Node.js mappings for
     "./timezones/": "./data/timezones/",
     "./timezones/utc": "./data/timezones/utc/index.mjs",
     "./core-polyfill": {
-      "node": ["std:core-module", "./core-polyfill"],
-      "browser": "./core-polyfill-browser"
+      "node": ["std:core-module", "./core-polyfill.js"],
+      "browser": "./core-polyfill-browser.js"
     }
   }
 }
@@ -230,7 +229,7 @@ For an example of a package that wants to support legacy Node.js, `require()` an
   "type": "module"
   "main": "./index-legacy.cjs",
   "default": [{
-    "require": "./index.cjs"
+    "require": "./index-legacy.cjs"
   }, "./index.js"],
   "exports": {
     "./features/": [{
