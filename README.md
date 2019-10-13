@@ -179,8 +179,8 @@ The object has keys which are _condition names_, and values which correspond to 
 
 Condition names are matched in a priority order. In Node.js the following conditions apply in priority order:
 
-1. `"node"`: Indicates we are in a Node.js environment.
-2. `"require"`: Indicates we are resolving from a CommonJS importer.
+1. `"require"`: Indicates we are resolving from a CommonJS importer.
+2. `"node"`: Indicates we are in a Node.js environment.
 
 > Note: Using a "require" condition opens up the dual specifier hazard in Node.js where a package can have different instances between CJS and ESM importers. There is an argument that this condition is an opt-in behaviour to the hazard which is less risky than the main concerns of the hazard which were non-intentional cases. It is still not clear if this condition will get consensus, and it may still be removed.
 
@@ -249,7 +249,7 @@ To show how conditions handle combined scenarios, here is another example of a p
   "default": {
     "require": "./index.cjs",
     "browser": "./index-browser.js",
-    "node": "./index.js
+    "node": "./index.js"
   }
 }
 ```
