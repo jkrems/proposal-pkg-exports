@@ -147,17 +147,15 @@ Conditional mappings are defined as _objects_ in the target slot for `"exports"`
 
 The object has keys which are _condition names_, and values which correspond to the mapping target.
 
-In Node.js, condition names are matched in object order. The first condition name that matches a known condition name for the current environment will match. Node.js supports the following conditions:
+In Node.js, the following condition names are matched in priority order:
 
-1. `"node"`: Indicates we are in a Node.js environment.
-2. `"main"`: Default fallback condition for any generic JS environment.
-3. `"require"`: Indicates we are resolving from a CommonJS importer.
+1. `"require"`: Indicates we are resolving from a CommonJS importer.
+2. `"node"`: Indicates we are in a Node.js environment.
+3. `"module"`: Indicates we are in an environment that supports ES modules. Can thus be used as a generic fallback for any environment.
 
 > Note: Using a "require" condition opens up the dual specifier hazard in Node.js where a package can have different instances between CJS and ESM importers. There is an argument that this condition is an opt-in behaviour to the hazard which is less risky than the main concerns of the hazard which were non-intentional cases. It is still not clear if this condition will get consensus, and it may still be removed.
 
-If no condition is matched, the package fallback applies for the target, continuing on to the next matching condition if necessary.
-
-Because the target is itself a target, nesting is naturally supported for more complex condition compositions.
+The first key of the above in a conditional object will be matched. If the target fails the next matching condition is matched. Because the target is itself a target, nesting is naturally supported for more complex condition compositions.
 
 Other resolvers are free to define their own conditions to match. Eg it is expected that users will use a `"browser"` condition name for browser mappings.
 
@@ -203,11 +201,11 @@ For an example of a package that wants to support legacy Node.js, `require()` an
   "exports": {
     ".": {
       "require": "./index-legacy.cjs",
-      "main": "./index.js"
+      "module": "./index.js"
     },
     "./features/": {
       "require": "./features-cjs/",
-      "main": "./features/"
+      "module": "./features/"
     }
   }
 }
@@ -225,20 +223,49 @@ To show how conditions handle combined scenarios, here is another example of a p
     ".": {
       "browser": {
         "require": "./index-browser.cjs",
-        "main": "./index-browser.js"
+        "module": "./index-browser.js"
       },
       "require": "./index.cjs",
-      "main": "./index.js"
+      "module": "./index.js"
     }
   }
 }
 ```
 
-In Node.js is the "browser" condition is skipped, hitting the "require" or "main" path depending on if resolution is from CommonJS or an ES module importer.
+In Node.js is the "browser" condition is skipped, hitting the "require" or "module" path depending on if resolution is from CommonJS or an ES module importer.
 
 For browser tools, they can match the appropriate browser index.
 
 Similarly, the above could apply to any exports as well.
+
+#### Configuring conditions
+
+It can be possible for Node.js to accept a new flag for setting custom conditions and their priorities.
+
+For example via:
+
+```
+node --env=react-native,production
+```
+
+The comma-separated provided custom condition names would then apply before in the matching priority order.
+
+This would support eg:
+
+```js
+{
+  "exports": {
+    ".": {
+      "production": "./index-production.js",
+      "module": "./index-dev.js"
+    }
+  }
+}
+```
+
+where Node.js doesn't need to natively support the `"production"` condition but it can exist by convention rather.
+
+In addition such a customization allows environments like Electron and React Native that build on top of Node.js to supplement the matching system.
 
 ### 3. Imports Field
 
