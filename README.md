@@ -149,6 +149,8 @@ When there is no "default" field, the traditional "main" and its associated look
 
 "default" can also be set to _false_ to indicate that there is no main entry point for the package.
 
+If any value for "default" set set, the package is immediately encapsulated as if `"exports": {}` were set.
+
 #### Example
 
 ```js
