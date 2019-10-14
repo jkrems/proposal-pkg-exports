@@ -51,7 +51,7 @@ Here’s a complete `package.json` example, for a hypothetical module named `@mo
     "./": "./src/util/",
     "./timezones/": "./data/timezones/",
     "./timezones/utc": "./data/timezones/utc/index.mjs",
-    "./core-polyfill": ["std:core-module", "./core-polyfill"]
+    "./core-polyfill": ["std:core-module", "./core-polyfill.js"]
   }
 }
 ```
@@ -139,7 +139,132 @@ import utc from '@momentjs/moment/timezones/utc/'; // Note trailing slash
 // Error: folders cannot be imported (there is no index.* magic)
 ```
 
-### 2. Imports Field
+### 2. Conditional Mapping
+
+Conditional mapping is an extension of `"exports"` that allows defining different mappings between different environments, for example having a different module path between Node.js and the browser.
+
+Conditional mappings are defined as _objects_ in the target slot for `"exports"`.
+
+The object has keys which are _condition names_, and values which correspond to the mapping target.
+
+In Node.js, the following condition names are matched in priority order:
+
+1. `"require"`: Indicates we are resolving from a CommonJS importer.
+2. `"node"`: Indicates we are in a Node.js environment.
+3. `"module"`: Indicates we are in an environment that supports ES modules. Can thus be used as a generic fallback for any environment.
+
+> Note: Using a "require" condition opens up the dual specifier hazard in Node.js where a package can have different instances between CJS and ESM importers. There is an argument that this condition is an opt-in behaviour to the hazard which is less risky than the main concerns of the hazard which were non-intentional cases. It is still not clear if this condition will get consensus, and it may still be removed.
+
+The first key of the above in a conditional object will be matched. If the target fails the next matching condition is matched. Because the target is itself a target, nesting is naturally supported for more complex condition compositions.
+
+Other resolvers are free to define their own conditions to match. Eg it is expected that users will use a `"browser"` condition name for browser mappings.
+
+#### Example
+
+Taking the previous moment example we can provide browser / Node.js mappings for some modules with the following:
+
+```js
+{
+  "name": "@momentjs/moment",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "node": "./dist/index.js",
+      "browser": "./dist/index-browser.js"
+    },
+    "./": {
+      "node": "./src/util/",
+      "browser": "./src/util-browser/"
+    },
+    "./timezones/": "./data/timezones/",
+    "./timezones/utc": "./data/timezones/utc/index.mjs",
+    "./core-polyfill": {
+      "node": ["std:core-module", "./core-polyfill.js"],
+      "browser": "./core-polyfill-browser.js"
+    }
+  }
+}
+```
+
+Note we are able to share some exports with both Node.js and the browser and others split between the environments.
+
+#### Dual package example
+
+For an example of a package that wants to support legacy Node.js, `require()` and `import` (noting that this is an opt-in to the instancing hazard, and pending consensus), we can use the `"require"` condition which will always beat the `"node"` condition as it is a more specific condition:
+
+```js
+{
+  "type": "module"
+  "main": "./index-legacy.cjs",
+  "exports": {
+    ".": {
+      "require": "./index-legacy.cjs",
+      "module": "./index.js"
+    },
+    "./features/": {
+      "require": "./features-cjs/",
+      "module": "./features/"
+    }
+  }
+}
+```
+
+#### Combined dual package browser example
+
+To show how conditions handle combined scenarios, here is another example of a package that supports `require()`, `import()` and a separate browser entry for both `require()` and `import()`:
+
+```js
+{
+  "type": "module",
+  "main": "./index.cjs",
+  "exports": {
+    ".": {
+      "browser": {
+        "require": "./index-browser.cjs",
+        "module": "./index-browser.js"
+      },
+      "require": "./index.cjs",
+      "module": "./index.js"
+    }
+  }
+}
+```
+
+In Node.js the "browser" condition is skipped, hitting the "require" or "module" path depending on if resolution is from CommonJS or an ES module importer.
+
+For browser tools, they can match the appropriate browser index.
+
+Similarly, the above could apply to any exports as well.
+
+#### Configuring conditions
+
+It can be possible for Node.js to accept a new flag for setting custom conditions and their priorities.
+
+For example via a `--env` top-level flag and option to Node.js as a comma-separated list of custom condition names to apply before in the matching priority order.
+
+This would support eg:
+
+```js
+{
+  "exports": {
+    ".": {
+      "production": "./index-production.js",
+      "react-native": "./index-react-native.js",
+      "module": "./index-dev.js"
+    }
+  }
+}
+```
+
+where `node --env=production,react-native` would match the `"production"` condition first followed by the `"react-native"` condition and then the standard remaining conditions in priority order.
+
+This way, just like the existing userland `process.env.NODE_ENV=production` convention, Node.js doesn't need to explicitly natively support the `"production"` condition but it can exist by convention on its own.
+
+In addition this customization allows environments like Electron and React Native that build on top of Node.js to supplement the condition matching priority system with their own environment conditions.
+
+### 3. Imports Field
 
 Imports provide the ability to remap bare specifiers within packages before they hit the node_modules resolution process.
 
