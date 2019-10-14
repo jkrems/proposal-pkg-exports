@@ -139,55 +139,25 @@ import utc from '@momentjs/moment/timezones/utc/'; // Note trailing slash
 // Error: folders cannot be imported (there is no index.* magic)
 ```
 
-### 2. Default Field
+### 2. Conditional Mapping
 
-The `default` package.json field can be thought of as the "new main" for Node.js.
+Conditional mapping is an extension of `"exports"` that allows defining different mappings between different environments, for example having a different module path between Node.js and the browser.
 
-Like exports, the target value can be a string or array, must start with './' and be an exact file path - no extension searching applies.
-
-When there is no "default" field, the traditional "main" and its associated lookup will be used, including the default `index.js` main.
-
-"default" can also be set to _false_ to indicate that there is no main entry point for the package.
-
-If any value for "default" set set, the package is immediately encapsulated as if `"exports": {}` were set.
-
-#### Example
-
-```js
-{
-  "main": "./index.js",
-  "default": "./main.js"
-}
-```
-
-will load `pkg/main.js` from both CommonJS and ESM importers `require('pkg')` or `import 'pkg'`.
-
-```js
-{
-  "default": false
-}
-```
-
-will give an error - "No main entry point found for pkg" when trying to `require('pkg')` or `import 'pkg'`.
-
-### 3. Conditional Mapping
-
-Conditional mapping is an extension of the `"exports"` and `"default"` features that allows defining different mappings between different environments, for example having a different module path between Node.js and the browser.
-
-Conditional mappings are defined as _objects_ in the target slot for both `"exports"` and the `"default"` field.
+Conditional mappings are defined as _objects_ in the target slot for `"exports"`.
 
 The object has keys which are _condition names_, and values which correspond to the mapping target.
 
-Condition names are matched in a priority order. In Node.js the following conditions apply in priority order:
+In Node.js, condition names are matched in object order. The first condition name that matches a known condition name for the current environment will match. Node.js supports the following conditions:
 
-1. `"require"`: Indicates we are resolving from a CommonJS importer.
-2. `"node"`: Indicates we are in a Node.js environment.
+1. `"node"`: Indicates we are in a Node.js environment.
+2. `"main"`: Default fallback condition for any generic JS environment.
+3. `"require"`: Indicates we are resolving from a CommonJS importer.
 
 > Note: Using a "require" condition opens up the dual specifier hazard in Node.js where a package can have different instances between CJS and ESM importers. There is an argument that this condition is an opt-in behaviour to the hazard which is less risky than the main concerns of the hazard which were non-intentional cases. It is still not clear if this condition will get consensus, and it may still be removed.
 
-> Node: It could also be worthwhile considering object order over priority order. This would shift the source of truth of the entry priority from the resolver to the package author, which could be beneficial, but should be discussed further.
+If no condition is matched, the package fallback applies for the target, continuing on to the next matching condition if necessary.
 
-If no condition is matched, the package fallback applies. If the matched condition target is invalid, the fallback will still not apply, although individual condition targets can themselves use array fallbacks.
+Because the target is itself a target, nesting is naturally supported for more complex condition compositions.
 
 Other resolvers are free to define their own conditions to match. Eg it is expected that users will use a `"browser"` condition name for browser mappings.
 
@@ -201,11 +171,11 @@ Taking the previous moment example we can provide browser / Node.js mappings for
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",
-  "default": {
-    "node": "./dist/index.js",
-    "browser": "./dist/index-browser.js"
-  },
   "exports": {
+    ".": {
+      "node": "./dist/index.js",
+      "browser": "./dist/index-browser.js"
+    },
     "./": {
       "node": "./src/util/",
       "browser": "./src/util-browser/"
@@ -230,36 +200,47 @@ For an example of a package that wants to support legacy Node.js, `require()` an
 {
   "type": "module"
   "main": "./index-legacy.cjs",
-  "default": [{
-    "require": "./index-legacy.cjs"
-  }, "./index.js"],
   "exports": {
-    "./features/": [{
-      "require": "./features-cjs/"
-    }, "./features/"]
+    ".": {
+      "require": "./index-legacy.cjs",
+      "main": "./index.js"
+    },
+    "./features/": {
+      "require": "./features-cjs/",
+      "main": "./features/"
+    }
   }
 }
 ```
 
 #### Combined dual package browser example
 
-To show how conditions handle combined scenarios, here is another example of a package that supports `require()`, `import()` and a separate browser entry:
+To show how conditions handle combined scenarios, here is another example of a package that supports `require()`, `import()` and a separate browser entry for both `require()` and `import()`:
 
 ```js
 {
   "type": "module",
-  "main": "./index.cjs"
-  "default": {
-    "require": "./index.cjs",
-    "browser": "./index-browser.js",
-    "node": "./index.js"
+  "main": "./index.cjs",
+  "exports": {
+    ".": {
+      "browser": {
+        "require": "./index-browser.cjs",
+        "main": "./index-browser.js"
+      },
+      "require": "./index.cjs",
+      "main": "./index.js"
+    }
   }
 }
 ```
 
+In Node.js is the "browser" condition is skipped, hitting the "require" or "main" path depending on if resolution is from CommonJS or an ES module importer.
+
+For browser tools, they can match the appropriate browser index.
+
 Similarly, the above could apply to any exports as well.
 
-### 4. Imports Field
+### 3. Imports Field
 
 Imports provide the ability to remap bare specifiers within packages before they hit the node_modules resolution process.
 
