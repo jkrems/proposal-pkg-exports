@@ -232,7 +232,7 @@ To show how conditions handle combined scenarios, here is another example of a p
 }
 ```
 
-In Node.js is the "browser" condition is skipped, hitting the "require" or "module" path depending on if resolution is from CommonJS or an ES module importer.
+In Node.js the "browser" condition is skipped, hitting the "require" or "module" path depending on if resolution is from CommonJS or an ES module importer.
 
 For browser tools, they can match the appropriate browser index.
 
