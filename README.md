@@ -242,13 +242,7 @@ Similarly, the above could apply to any exports as well.
 
 It can be possible for Node.js to accept a new flag for setting custom conditions and their priorities.
 
-For example via:
-
-```
-node --env=react-native,production
-```
-
-The comma-separated provided custom condition names would then apply before in the matching priority order.
+For example via a `--env` top-level flag and option to Node.js as a comma-separated list of custom condition names to apply before in the matching priority order.
 
 This would support eg:
 
@@ -257,15 +251,18 @@ This would support eg:
   "exports": {
     ".": {
       "production": "./index-production.js",
+      "react-native": "./index-react-native.js",
       "module": "./index-dev.js"
     }
   }
 }
 ```
 
-where Node.js doesn't need to natively support the `"production"` condition but it can exist by convention rather.
+where `node --env=production,react-native` would match the `"production"` condition first followed by the `"react-native"` condition and then the standard remaining conditions in priority order.
 
-In addition such a customization allows environments like Electron and React Native that build on top of Node.js to supplement the matching system.
+This way, just like the existing userland `process.env.NODE_ENV=production` convention, Node.js doesn't need to explicitly natively support the `"production"` condition but it can exist by convention on its own.
+
+In addition this customization allows environments like Electron and React Native that build on top of Node.js to supplement the condition matching priority system with their own environment conditions.
 
 ### 3. Imports Field
 
