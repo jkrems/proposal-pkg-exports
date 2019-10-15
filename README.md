@@ -151,7 +151,7 @@ In Node.js, the following condition names are matched in priority order:
 
 1. `"require"`: Indicates we are resolving from a CommonJS importer.
 2. `"node"`: Indicates we are in a Node.js environment.
-3. `"module"`: Indicates we are in an environment that supports ES modules. Can thus be used as a generic fallback for any environment.
+3. `"default"`: The generic fallback.
 
 > Note: Using a "require" condition opens up the dual specifier hazard in Node.js where a package can have different instances between CJS and ESM importers. There is an argument that this condition is an opt-in behaviour to the hazard which is less risky than the main concerns of the hazard which were non-intentional cases. It is still not clear if this condition will get consensus, and it may still be removed.
 
@@ -201,11 +201,11 @@ For an example of a package that wants to support legacy Node.js, `require()` an
   "exports": {
     ".": {
       "require": "./index-legacy.cjs",
-      "module": "./index.js"
+      "default": "./index.js"
     },
     "./features/": {
       "require": "./features-cjs/",
-      "module": "./features/"
+      "default": "./features/"
     }
   }
 }
@@ -223,16 +223,18 @@ To show how conditions handle combined scenarios, here is another example of a p
     ".": {
       "browser": {
         "require": "./index-browser.cjs",
-        "module": "./index-browser.js"
+        "default": "./index-browser.js"
       },
-      "require": "./index.cjs",
-      "module": "./index.js"
+      "default": {
+        "require": "./index.cjs",
+        "default": "./index.js"
+      }
     }
   }
 }
 ```
 
-In Node.js the "browser" condition is skipped, hitting the "require" or "module" path depending on if resolution is from CommonJS or an ES module importer.
+In Node.js the "browser" condition is skipped, hitting the "require" or "default" path depending on if resolution is from CommonJS or an ES module importer.
 
 For browser tools, they can match the appropriate browser index.
 
@@ -252,7 +254,7 @@ This would support eg:
     ".": {
       "production": "./index-production.js",
       "react-native": "./index-react-native.js",
-      "module": "./index-dev.js"
+      "default": "./index-dev.js"
     }
   }
 }
