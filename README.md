@@ -27,7 +27,7 @@
 
 ## `package.json` Interfaces
 
-We propose two fields in `package.json` to specify entrypoints and internal aliasing of bare specifiers - [`"exports"`](#1-exports-field) and [`"imports"`](#2-imports-field).
+We propose two fields in `package.json` to specify entrypoints and internal aliasing of bare specifiers - [`"exports"`](#1-exports-field) and [`"imports"`](#3-imports-field).
 
 > **For both fields the final names of `"exports"` and `"imports"` are still TBD, and these names should be considered placeholders.**
 
