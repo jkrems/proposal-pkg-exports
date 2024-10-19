@@ -252,17 +252,17 @@ This would support eg:
 {
   "exports": {
     ".": {
-      "production": "./index-production.js",
+      "development": "./index-dev.js",
       "react-native": "./index-react-native.js",
-      "default": "./index-dev.js"
+      "default": "./index-production.js"
     }
   }
 }
 ```
 
-where `node --env=production,react-native` would match the `"production"` condition first followed by the `"react-native"` condition and then the standard remaining conditions in priority order.
+where `node --env=development,react-native` would match the `"development"` condition first followed by the `"react-native"` condition and then the standard remaining conditions in priority order.
 
-This way, just like the existing userland `process.env.NODE_ENV=production` convention, Node.js doesn't need to explicitly natively support the `"production"` condition but it can exist by convention on its own.
+This way, just like the existing userland `process.env.NODE_ENV=development` convention, Node.js doesn't need to explicitly natively support the `"development"` condition but it can exist by convention on its own.
 
 In addition this customization allows environments like Electron and React Native that build on top of Node.js to supplement the condition matching priority system with their own environment conditions.
 
